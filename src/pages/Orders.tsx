@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -338,7 +339,7 @@ export default function Orders() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="total_amount">Total Amount ($)</Label>
+                  <Label htmlFor="total_amount">Total Amount (₹)</Label>
                   <Input
                     id="total_amount"
                     type="number"
@@ -407,7 +408,7 @@ export default function Orders() {
                   <TableCell>{getStatusBadge(order.status)}</TableCell>
                   <TableCell>{order.staff?.name || "Unassigned"}</TableCell>
                   <TableCell>
-                    ${order.total_amount?.toLocaleString() || "0.00"}
+                    {order.total_amount ? formatCurrency(order.total_amount) : "₹0"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

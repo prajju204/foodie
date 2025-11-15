@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -193,7 +194,7 @@ export default function Menu() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="price">Price ($)</Label>
+                    <Label htmlFor="price">Price (₹)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -293,7 +294,7 @@ export default function Menu() {
                   <TableCell>
                     {item.menu_categories?.name || "Uncategorized"}
                   </TableCell>
-                  <TableCell>${item.price.toFixed(2)}</TableCell>
+                  <TableCell>{formatCurrency(item.price)}</TableCell>
                   <TableCell>
                     <Badge variant={item.is_available ? "default" : "secondary"}>
                       {item.is_available ? "Available" : "Unavailable"}
