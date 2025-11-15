@@ -93,22 +93,38 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-20 left-10 h-72 w-72 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 h-96 w-96 bg-accent/10 rounded-full blur-3xl" />
+      </div>
+
       <div className="w-full max-w-md">
-        <div className="flex justify-center mb-6">
-          <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center">
-            <ChefHat className="h-10 w-10 text-primary-foreground" />
+        {/* Logo and branding */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl" />
+            <div className="relative h-20 w-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+              <ChefHat className="h-12 w-12 text-primary-foreground" />
+            </div>
           </div>
+          <h1 className="mt-6 text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Foodie
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Catering Management System
+          </p>
         </div>
         
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Welcome to Foodie</CardTitle>
-            <CardDescription>
-              Catering Management System Admin Panel
+        <Card className="border-border/50 shadow-xl backdrop-blur-sm bg-card/95">
+          <CardHeader className="text-center space-y-1 pb-4">
+            <CardTitle className="text-2xl font-semibold">Welcome Back</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Sign in to manage your catering business
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
