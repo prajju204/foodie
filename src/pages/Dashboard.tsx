@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { formatCurrency } from "@/lib/utils";
 import {
   DollarSign,
   ShoppingCart,
@@ -111,7 +112,7 @@ export default function Dashboard() {
           />
           <StatsCard
             title="Total Revenue"
-            value={`$${stats.totalRevenue.toLocaleString()}`}
+            value={formatCurrency(stats.totalRevenue)}
             icon={DollarSign}
             description="Total earnings"
           />
