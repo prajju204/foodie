@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { toast } from "sonner";
-import { ChefHat } from "lucide-react";
 import { z } from "zod";
+import foodieLogo from "@/assets/foodie-logo.png";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -73,9 +73,9 @@ export default function Auth() {
           <div className="relative group">
             {/* Glow effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-accent rounded-3xl blur-2xl opacity-60 group-hover:opacity-80 transition-opacity" />
-            {/* Icon container */}
-            <div className="relative h-24 w-24 rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/90 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-transform duration-300">
-              <ChefHat className="h-14 w-14 text-primary-foreground" strokeWidth={1.5} />
+            {/* Logo container */}
+            <div className="relative h-24 w-24 rounded-3xl bg-background flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-transform duration-300 p-2">
+              <img src={foodieLogo} alt="Foodie Logo" className="w-full h-full object-contain" />
             </div>
           </div>
           
