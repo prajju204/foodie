@@ -59,41 +59,57 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute top-20 left-10 h-72 w-72 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 h-96 w-96 bg-accent/10 rounded-full blur-3xl" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4 sm:p-6 md:p-8 relative overflow-hidden">
+      {/* Animated background gradient orbs */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-primary/10 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-accent/10 blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[300px] rounded-full bg-primary/5 blur-2xl" />
       </div>
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-[440px] space-y-8">
         {/* Logo and branding */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl" />
-            <div className="relative h-20 w-20 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-              <ChefHat className="h-12 w-12 text-primary-foreground" />
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className="relative group">
+            {/* Glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-accent rounded-3xl blur-2xl opacity-60 group-hover:opacity-80 transition-opacity" />
+            {/* Icon container */}
+            <div className="relative h-24 w-24 rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/90 flex items-center justify-center shadow-2xl transform group-hover:scale-105 transition-transform duration-300">
+              <ChefHat className="h-14 w-14 text-primary-foreground" strokeWidth={1.5} />
             </div>
           </div>
-          <h1 className="mt-6 text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Foodie
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Catering Management System
-          </p>
+          
+          <div className="space-y-2">
+            <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+              Foodie
+            </h1>
+            <p className="text-base text-muted-foreground font-medium">
+              Catering Management System
+            </p>
+          </div>
         </div>
         
-        <Card className="border-border/50 shadow-xl backdrop-blur-sm bg-card/95">
-          <CardHeader className="text-center space-y-1 pb-4">
-            <CardTitle className="text-2xl font-semibold">Admin Access</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Sign in to manage your catering business
+        {/* Login Card */}
+        <Card className="border border-border/50 shadow-2xl backdrop-blur-xl bg-card/80 overflow-hidden">
+          {/* Subtle top accent bar */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary via-accent to-primary" />
+          
+          <CardHeader className="space-y-2 pb-6 pt-8 px-6 sm:px-8">
+            <CardTitle className="text-2xl sm:text-3xl font-bold text-center">
+              Admin Login
+            </CardTitle>
+            <CardDescription className="text-center text-base">
+              Enter your credentials to access the dashboard
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-2">
-            <form onSubmit={handleSignIn} className="space-y-4">
+          
+          <CardContent className="px-6 sm:px-8 pb-8">
+            <form onSubmit={handleSignIn} className="space-y-5">
+              {/* Email Field */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm font-semibold">
+                  Email Address
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -101,22 +117,56 @@ export default function Auth() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="h-12 text-base bg-background/50 border-border/60 focus:border-primary transition-colors"
                 />
               </div>
+
+              {/* Password Field */}
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-semibold">
+                    Password
+                  </Label>
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                    onClick={() => toast.info("Password reset functionality coming soon")}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
                 <Input
                   id="password"
                   type="password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="h-12 text-base bg-background/50 border-border/60 focus:border-primary transition-colors"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In as Admin"}
+
+              {/* Submit Button */}
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 mt-6" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    Signing in...
+                  </span>
+                ) : (
+                  "Sign In to Dashboard"
+                )}
               </Button>
             </form>
+
+            {/* Footer note */}
+            <p className="text-center text-sm text-muted-foreground mt-6 pt-6 border-t border-border/50">
+              Secure admin access only
+            </p>
           </CardContent>
         </Card>
       </div>
