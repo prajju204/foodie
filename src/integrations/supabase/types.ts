@@ -106,6 +106,7 @@ export type Database = {
           category_id: string | null
           created_at: string | null
           description: string | null
+          food_type: string | null
           id: string
           image_url: string | null
           is_available: boolean | null
@@ -117,6 +118,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          food_type?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
@@ -128,6 +130,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          food_type?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
