@@ -34,15 +34,12 @@ interface MenuItem {
   name: string;
   description: string | null;
   price: number;
-  category_id: string | null;
   is_available: boolean;
   food_type: FoodType;
-  menu_categories?: { name: string } | null;
 }
 
 export default function Menu() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [activeTab, setActiveTab] = useState<FoodType>("veg");
@@ -50,23 +47,18 @@ export default function Menu() {
     name: "",
     description: "",
     price: "",
-    category_id: "",
     is_available: true,
     food_type: "veg" as FoodType,
   });
 
   useEffect(() => {
     fetchMenuItems();
-    fetchCategories();
   }, []);
 
   const fetchMenuItems = async () => {
     const { data, error } = await supabase
       .from("menu_items")
-      .select(`
-        *,
-        menu_categories(name)
-      `)
+      .select("*")
       .order("name");
 
     if (error) {
@@ -79,14 +71,6 @@ export default function Menu() {
     }
   };
 
-  const fetchCategories = async () => {
-    const { data } = await supabase
-      .from("menu_categories")
-      .select("*")
-      .order("name");
-    setCategories(data || []);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -94,7 +78,6 @@ export default function Menu() {
       name: formData.name,
       description: formData.description,
       price: parseFloat(formData.price),
-      category_id: formData.category_id || null,
       is_available: formData.is_available,
       food_type: formData.food_type,
     };
@@ -146,7 +129,6 @@ export default function Menu() {
       name: item.name,
       description: item.description || "",
       price: item.price.toString(),
-      category_id: item.category_id || "",
       is_available: item.is_available,
       food_type: item.food_type || "veg",
     });
@@ -158,7 +140,6 @@ export default function Menu() {
       name: "",
       description: "",
       price: "",
-      category_id: "",
       is_available: true,
       food_type: activeTab,
     });
@@ -203,17 +184,12 @@ export default function Menu() {
         <div className="p-5">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
                 <Badge variant={getFoodTypeBadgeVariant(item.food_type)} className="shrink-0">
                   {getFoodTypeLabel(item.food_type)}
                 </Badge>
               </div>
-              {item.menu_categories?.name && (
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {item.menu_categories.name}
-                </span>
-              )}
             </div>
             <div className="text-right shrink-0">
               <p className="text-lg font-bold text-primary">{formatCurrency(item.price)}</p>
@@ -487,27 +463,6 @@ export default function Menu() {
                           Platter
                         </div>
                       </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select
-                    value={formData.category_id}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, category_id: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>
