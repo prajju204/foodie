@@ -51,6 +51,14 @@ All colors MUST be HSL.
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
+    /* Food type colors */
+    --veg: 142 76% 36%;
+    --veg-foreground: 0 0% 100%;
+    --non-veg: 0 72% 51%;
+    --non-veg-foreground: 0 0% 100%;
+    --platter: 38 92% 50%;
+    --platter-foreground: 0 0% 100%;
+
     /* Chart colors */
     --chart-1: 231 48% 48%;
     --chart-2: 38 92% 50%;
