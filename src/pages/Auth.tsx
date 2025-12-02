@@ -164,9 +164,15 @@ export default function Auth() {
             </form>
 
             {/* Footer note */}
-            <p className="text-center text-sm text-muted-foreground mt-6 pt-6 border-t border-border/50">
-              Secure admin access only
-            </p>
+            <div className="text-center text-sm text-muted-foreground mt-6 pt-6 border-t border-border/50 space-y-2">
+              <p>Secure admin access only</p>
+              <p>
+                Looking to book catering?{" "}
+                <a href="/book" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                  Click here to order
+                </a>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
