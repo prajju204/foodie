@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
+import OrderDetail from "./pages/OrderDetail";
 import Menu from "./pages/Menu";
 import Inventory from "./pages/Inventory";
 import Staff from "./pages/Staff";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/book" element={<BookCatering />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:id" element={<OrderDetail />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/staff" element={<Staff />} />
