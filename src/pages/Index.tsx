@@ -1,15 +1,16 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
-import Dashboard from "./Dashboard";
+import Homepage from "./Homepage";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
+    // Redirect authenticated users to dashboard
+    if (!loading && user) {
+      navigate("/dashboard");
     }
   }, [user, loading, navigate]);
 
@@ -24,11 +25,8 @@ const Index = () => {
     );
   }
 
-  if (!user) {
-    return null;
-  }
-
-  return <Dashboard />;
+  // Show homepage for unauthenticated users
+  return <Homepage />;
 };
 
 export default Index;
