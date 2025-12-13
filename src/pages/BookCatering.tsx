@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { format } from "date-fns";
 import { CalendarIcon, Leaf, Drumstick, UtensilsCrossed, Plus, Minus, ShoppingCart, ArrowRight, ArrowLeft, Users, MapPin, FileText } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -34,6 +36,8 @@ interface CartItem extends MenuItem {
 type Step = "date" | "menu" | "details" | "confirm";
 
 export default function BookCatering() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<Step>("date");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -52,9 +56,18 @@ export default function BookCatering() {
     notes: "",
   });
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    fetchMenuItems();
-  }, []);
+    if (!authLoading && !user) {
+      navigate("/auth?redirect=/book");
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchMenuItems();
+    }
+  }, [user]);
 
   const fetchMenuItems = async () => {
     const { data, error } = await supabase
@@ -209,6 +222,18 @@ export default function BookCatering() {
     });
     setCurrentStep("date");
   };
+
+  // Show loading while checking auth
+  if (authLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const MenuItemCard = ({ item }: { item: MenuItem }) => {
     const quantity = getCartItemQuantity(item.id);

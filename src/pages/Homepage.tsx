@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { 
   Utensils, 
   Users, 
@@ -20,6 +21,16 @@ import foodieLogo from "@/assets/foodie-logo.png";
 import heroCatering from "@/assets/hero-catering.jpg";
 
 const Homepage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleBookCatering = () => {
+    if (user) {
+      navigate("/book");
+    } else {
+      navigate("/auth?redirect=/book");
+    }
+  };
   const services = [
     {
       icon: Leaf,
@@ -127,12 +138,10 @@ const Homepage = () => {
           <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             From intimate gatherings to grand celebrations, we bring exceptional flavors and impeccable service to your events.
           </p>
-          <Link to="/book">
-            <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-primary/90">
-              <Calendar className="mr-2 h-5 w-5" />
-              Book Catering
-            </Button>
-          </Link>
+          <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-primary/90" onClick={handleBookCatering}>
+            <Calendar className="mr-2 h-5 w-5" />
+            Book Catering
+          </Button>
         </div>
       </section>
 
@@ -207,12 +216,10 @@ const Homepage = () => {
           <p className="text-primary-foreground/90 text-lg mb-8">
             Let us make your next event unforgettable with our delicious food and exceptional service.
           </p>
-          <Link to="/book">
-            <Button size="lg" variant="secondary" className="text-lg px-8">
-              <Utensils className="mr-2 h-5 w-5" />
-              Start Booking Now
-            </Button>
-          </Link>
+          <Button size="lg" variant="secondary" className="text-lg px-8" onClick={handleBookCatering}>
+            <Utensils className="mr-2 h-5 w-5" />
+            Start Booking Now
+          </Button>
         </div>
       </section>
 
