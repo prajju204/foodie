@@ -60,12 +60,12 @@ export default function Auth() {
             
             {/* Title */}
             <h1 className="text-2xl font-normal text-[#202124] text-center mb-2">
-              Admin Sign In
+              Welcome Back
             </h1>
             
             {/* Subtitle */}
             <p className="text-sm text-[#5f6368] text-center mb-8">
-              Sign in to access the Foodie dashboard
+              Sign in to your Foodie account
             </p>
 
             {/* Form */}
@@ -138,7 +138,7 @@ export default function Auth() {
           {/* Help Text */}
           <div className="mt-6 text-center">
             <p className="text-sm text-[#5f6368]">
-              Admin access only. Contact your administrator if you need access.
+              New to Foodie? Start ordering delicious catering today.
             </p>
           </div>
         </div>
