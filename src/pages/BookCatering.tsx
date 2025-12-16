@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { format } from "date-fns";
-import { CalendarIcon, Leaf, Drumstick, UtensilsCrossed, Plus, Minus, ShoppingCart, ArrowRight, ArrowLeft, Users, MapPin, FileText } from "lucide-react";
+import { 
+  CalendarIcon, Leaf, Drumstick, UtensilsCrossed, Plus, Minus, ShoppingCart, 
+  ArrowRight, ArrowLeft, Users, MapPin, FileText, Clock, Check, AlertCircle,
+  Truck, ChefHat, Package, Percent, User, Phone, Mail
+} from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,11 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import foodieLogo from "@/assets/foodie-logo.png";
 
 type FoodType = "veg" | "non_veg" | "platter";
+type Step = "date" | "menu" | "details" | "confirm";
 
 interface MenuItem {
   id: string;
@@ -33,28 +39,53 @@ interface CartItem extends MenuItem {
   quantity: number;
 }
 
-type Step = "date" | "menu" | "details" | "confirm";
+interface ValidationErrors {
+  [key: string]: string;
+}
+
+// Constants for charges
+const VESSEL_CHARGES = 5000;
+const DELIVERY_CHARGES = 3000;
+const STAFF_RATE = 800;
+const SERVICE_CHARGE_PERCENT = 5;
+const GUESTS_PER_STAFF = 50;
+const MIN_GUEST_COUNT = 50;
+
+// Time slots
+const TIME_SLOTS = [
+  "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM",
+  "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM", "06:00 PM",
+  "07:00 PM", "08:00 PM", "09:00 PM"
+];
 
 export default function BookCatering() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // Step management
   const [currentStep, setCurrentStep] = useState<Step>("date");
+  
+  // Date & Time
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  
+  // Menu & Cart
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeTab, setActiveTab] = useState<FoodType>("veg");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [guestCount, setGuestCount] = useState<string>("");
   
   // Customer details
   const [customerDetails, setCustomerDetails] = useState({
     name: "",
     email: "",
     phone: "",
-    eventName: "",
-    eventLocation: "",
-    guestCount: "",
-    notes: "",
+    address: "",
   });
+  
+  // State
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -86,26 +117,29 @@ export default function BookCatering() {
     }
   };
 
-  const filterItemsByType = (type: FoodType) => {
-    return menuItems.filter((item) => item.food_type === type);
+  // Calculations
+  const getFoodCost = () => {
+    const guests = parseInt(guestCount) || 0;
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity * guests), 0);
   };
 
-  const getFoodTypeLabel = (type: FoodType) => {
-    switch (type) {
-      case "veg": return "Veg";
-      case "non_veg": return "Non-Veg";
-      case "platter": return "Platter";
-    }
+  const getStaffCount = () => {
+    const guests = parseInt(guestCount) || 0;
+    return Math.ceil(guests / GUESTS_PER_STAFF);
   };
 
-  const getFoodTypeBadgeVariant = (type: FoodType) => {
-    switch (type) {
-      case "veg": return "veg" as const;
-      case "non_veg": return "nonVeg" as const;
-      case "platter": return "platter" as const;
-    }
+  const getStaffCharges = () => getStaffCount() * STAFF_RATE;
+  const getServiceCharges = () => Math.round(getFoodCost() * SERVICE_CHARGE_PERCENT / 100);
+  
+  const getTotalAmount = () => {
+    const foodCost = getFoodCost();
+    if (foodCost === 0) return 0;
+    return foodCost + VESSEL_CHARGES + DELIVERY_CHARGES + getStaffCharges() + getServiceCharges();
   };
 
+  const getTotalItems = () => cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Cart functions
   const addToCart = (item: MenuItem) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
@@ -126,56 +160,96 @@ export default function BookCatering() {
     });
   };
 
-  const getCartItemQuantity = (itemId: string) => {
-    return cart.find(i => i.id === itemId)?.quantity || 0;
+  const getCartItemQuantity = (itemId: string) => cart.find(i => i.id === itemId)?.quantity || 0;
+
+  // Validation
+  const validateStep = (step: Step): boolean => {
+    const newErrors: ValidationErrors = {};
+    
+    if (step === "date") {
+      if (!selectedDate) newErrors.date = "Please select event date";
+      if (!selectedTime) newErrors.time = "Please select event time";
+    }
+    
+    if (step === "menu") {
+      if (cart.length === 0) newErrors.cart = "Please select at least one menu item";
+      if (!guestCount) newErrors.guestCount = "Guest count is required";
+      else if (!/^\d+$/.test(guestCount)) newErrors.guestCount = "Guest count must be numeric only";
+      else if (parseInt(guestCount) < MIN_GUEST_COUNT) newErrors.guestCount = `Minimum ${MIN_GUEST_COUNT} guests required`;
+    }
+    
+    if (step === "details") {
+      if (!customerDetails.name) newErrors.name = "Name is required";
+      else if (customerDetails.name.length < 3) newErrors.name = "Name must be at least 3 characters";
+      if (!customerDetails.phone) newErrors.phone = "Phone number is required";
+      else if (!/^\d{10}$/.test(customerDetails.phone)) newErrors.phone = "Please enter a valid 10-digit phone number";
+      if (!customerDetails.email) newErrors.email = "Email is required";
+      else if (!/\S+@\S+\.\S+/.test(customerDetails.email)) newErrors.email = "Please enter a valid email address";
+      if (!customerDetails.address) newErrors.address = "Event address is required";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const getTotalAmount = () => {
-    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const goToNextStep = () => {
+    if (!validateStep(currentStep)) {
+      toast.error("Please fix the errors before continuing");
+      return;
+    }
+    
+    const stepOrder: Step[] = ["date", "menu", "details", "confirm"];
+    const currentIndex = stepOrder.indexOf(currentStep);
+    if (currentIndex < stepOrder.length - 1) {
+      setCurrentStep(stepOrder[currentIndex + 1]);
+    }
   };
 
-  const getTotalItems = () => {
-    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  const goToPrevStep = () => {
+    const stepOrder: Step[] = ["date", "menu", "details", "confirm"];
+    const currentIndex = stepOrder.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(stepOrder[currentIndex - 1]);
+    }
   };
 
   const handleSubmitOrder = async () => {
-    if (!selectedDate || cart.length === 0) {
-      toast.error("Please select a date and add items to cart");
-      return;
-    }
-
-    if (!customerDetails.name || !customerDetails.email || !customerDetails.phone || !customerDetails.eventName || !customerDetails.guestCount) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
+    if (!validateStep("details")) return;
+    
     setIsSubmitting(true);
 
     try {
-      // Create customer first
+      // Create customer
       const { data: customerData, error: customerError } = await supabase
         .from("customers")
         .insert([{
           name: customerDetails.name,
           email: customerDetails.email,
           phone: customerDetails.phone,
-          address: customerDetails.eventLocation,
+          address: customerDetails.address,
         }])
         .select()
         .single();
 
       if (customerError) throw customerError;
 
-      // Create order
+      // Create order with combined date and time
+      const eventDateTime = new Date(selectedDate!);
+      const [time, period] = selectedTime.split(" ");
+      let [hours, minutes] = time.split(":").map(Number);
+      if (period === "PM" && hours !== 12) hours += 12;
+      if (period === "AM" && hours === 12) hours = 0;
+      eventDateTime.setHours(hours, minutes);
+
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert([{
           customer_id: customerData.id,
-          event_date: selectedDate.toISOString(),
-          event_name: customerDetails.eventName,
-          event_location: customerDetails.eventLocation,
-          guest_count: parseInt(customerDetails.guestCount),
-          notes: customerDetails.notes,
+          event_date: eventDateTime.toISOString(),
+          event_name: `Catering for ${customerDetails.name}`,
+          event_location: customerDetails.address,
+          guest_count: parseInt(guestCount),
+          notes: `Time: ${selectedTime}`,
           total_amount: getTotalAmount(),
           status: "pending",
         }])
@@ -188,20 +262,17 @@ export default function BookCatering() {
       const orderItems = cart.map(item => ({
         order_id: orderData.id,
         menu_item_id: item.id,
-        quantity: item.quantity,
+        quantity: item.quantity * parseInt(guestCount),
         price: item.price,
       }));
 
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
+      const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
       if (itemsError) throw itemsError;
 
-      toast.success("Your catering order has been placed successfully!");
+      toast.success("Order placed successfully!");
       setCurrentStep("confirm");
     } catch (error) {
-      console.error("Order submission error:", error);
+      console.error("Order error:", error);
       toast.error("Failed to place order. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -210,17 +281,31 @@ export default function BookCatering() {
 
   const resetOrder = () => {
     setSelectedDate(undefined);
+    setSelectedTime("");
     setCart([]);
-    setCustomerDetails({
-      name: "",
-      email: "",
-      phone: "",
-      eventName: "",
-      eventLocation: "",
-      guestCount: "",
-      notes: "",
-    });
+    setGuestCount("");
+    setCustomerDetails({ name: "", email: "", phone: "", address: "" });
+    setErrors({});
     setCurrentStep("date");
+  };
+
+  // Helper components
+  const filterItemsByType = (type: FoodType) => menuItems.filter(item => item.food_type === type);
+  
+  const getFoodTypeLabel = (type: FoodType) => {
+    switch (type) {
+      case "veg": return "Veg";
+      case "non_veg": return "Non-Veg";
+      case "platter": return "Platter";
+    }
+  };
+
+  const getFoodTypeBadgeVariant = (type: FoodType) => {
+    switch (type) {
+      case "veg": return "veg" as const;
+      case "non_veg": return "nonVeg" as const;
+      case "platter": return "platter" as const;
+    }
   };
 
   // Show loading while checking auth
@@ -235,13 +320,32 @@ export default function BookCatering() {
     );
   }
 
+  // Step indicator
+  const steps = [
+    { id: "date", label: "Select Date & Time", icon: CalendarIcon, number: 1 },
+    { id: "menu", label: "Choose Food", icon: UtensilsCrossed, number: 2 },
+    { id: "details", label: "Your Details", icon: Users, number: 3 },
+    { id: "confirm", label: "Confirmation", icon: Check, number: 4 },
+  ];
+
+  const ErrorText = ({ message }: { message?: string }) => {
+    if (!message) return null;
+    return (
+      <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+        <AlertCircle className="h-3 w-3" />
+        {message}
+      </p>
+    );
+  };
+
   const MenuItemCard = ({ item }: { item: MenuItem }) => {
     const quantity = getCartItemQuantity(item.id);
+    const guests = parseInt(guestCount) || 0;
     
     return (
       <Card className="bg-card hover:shadow-md transition-all duration-300 border border-border/50">
         <CardContent className="p-4">
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex justify-between items-start mb-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold text-foreground">{item.name}</h3>
@@ -253,42 +357,39 @@ export default function BookCatering() {
                 <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
               )}
             </div>
-            <p className="text-lg font-bold text-primary ml-4">{formatCurrency(item.price)}</p>
           </div>
           
-          <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border/50">
+          <div className="flex items-center justify-between pt-3 border-t border-border/50">
+            <div>
+              <p className="text-lg font-bold text-primary">{formatCurrency(item.price)}</p>
+              <p className="text-xs text-muted-foreground">per plate</p>
+            </div>
+            
             {quantity > 0 ? (
               <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => removeFromCart(item.id)}
-                >
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.id)}>
                   <Minus className="h-4 w-4" />
                 </Button>
-                <span className="font-semibold text-foreground w-8 text-center">{quantity}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => addToCart(item)}
-                >
+                <span className="font-semibold text-foreground w-6 text-center">{quantity}</span>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => addToCart(item)}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addToCart(item)}
-                className="gap-2"
-              >
+              <Button variant="outline" size="sm" onClick={() => addToCart(item)} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Add
               </Button>
             )}
           </div>
+          
+          {quantity > 0 && guests > 0 && (
+            <div className="mt-3 p-2 bg-primary/5 rounded-md">
+              <p className="text-sm text-primary font-medium">
+                {quantity} × {guests} guests = {formatCurrency(item.price * quantity * guests)}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -307,20 +408,78 @@ export default function BookCatering() {
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((item) => (
-          <MenuItemCard key={item.id} item={item} />
-        ))}
+        {items.map(item => <MenuItemCard key={item.id} item={item} />)}
       </div>
     );
   };
 
-  // Step indicator
-  const steps = [
-    { id: "date", label: "Select Date", icon: CalendarIcon },
-    { id: "menu", label: "Choose Food", icon: UtensilsCrossed },
-    { id: "details", label: "Your Details", icon: Users },
-    { id: "confirm", label: "Confirmation", icon: FileText },
-  ];
+  const CostBreakdown = ({ showFull = false }: { showFull?: boolean }) => {
+    const foodCost = getFoodCost();
+    const guests = parseInt(guestCount) || 0;
+    
+    if (cart.length === 0 || guests < MIN_GUEST_COUNT) return null;
+    
+    return (
+      <Card className="border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Cost Breakdown
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Food items */}
+          {showFull && cart.map(item => (
+            <div key={item.id} className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                {item.name} ({item.quantity} × {guests} guests × {formatCurrency(item.price)})
+              </span>
+              <span className="font-medium">{formatCurrency(item.price * item.quantity * guests)}</span>
+            </div>
+          ))}
+          
+          <div className="flex justify-between text-sm font-medium">
+            <span>🍽️ Food Cost</span>
+            <span>{formatCurrency(foodCost)}</span>
+          </div>
+          
+          <div className="border-t border-border pt-3 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Package className="h-4 w-4" /> Vessel Charges
+              </span>
+              <span>{formatCurrency(VESSEL_CHARGES)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Truck className="h-4 w-4" /> Delivery Charges
+              </span>
+              <span>{formatCurrency(DELIVERY_CHARGES)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <ChefHat className="h-4 w-4" /> Staff Charges ({getStaffCount()} staff × ₹{STAFF_RATE})
+              </span>
+              <span>{formatCurrency(getStaffCharges())}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Percent className="h-4 w-4" /> Service Charges ({SERVICE_CHARGE_PERCENT}%)
+              </span>
+              <span>{formatCurrency(getServiceCharges())}</span>
+            </div>
+          </div>
+          
+          <div className="border-t-2 border-primary pt-3">
+            <div className="flex justify-between">
+              <span className="font-bold text-lg">Total Amount</span>
+              <span className="font-bold text-xl text-primary">{formatCurrency(getTotalAmount())}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
@@ -331,44 +490,40 @@ export default function BookCatering() {
             <img src={foodieLogo} alt="Foodie Logo" className="h-10 w-10 object-contain" />
             <span className="text-xl font-bold text-foreground">Foodie Catering</span>
           </Link>
-          
-          {/* Cart summary */}
-          {cart.length > 0 && currentStep !== "confirm" && (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <ShoppingCart className="h-5 w-5" />
-                <span>{getTotalItems()} items</span>
-                <span className="font-semibold text-foreground">{formatCurrency(getTotalAmount())}</span>
-              </div>
-            </div>
-          )}
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
         {/* Step Indicator */}
         <div className="mb-8">
-          <div className="flex items-center justify-center gap-2 md:gap-4">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 md:gap-4">
             {steps.map((step, index) => {
-              const Icon = step.icon;
               const isActive = step.id === currentStep;
               const isPast = steps.findIndex(s => s.id === currentStep) > index;
+              const isCompleted = currentStep === "confirm" && index < 3;
               
               return (
                 <div key={step.id} className="flex items-center">
                   <div className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
+                    "flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-full transition-all",
                     isActive && "bg-primary text-primary-foreground",
-                    isPast && "bg-primary/20 text-primary",
-                    !isActive && !isPast && "bg-muted text-muted-foreground"
+                    (isPast || isCompleted) && "bg-primary/20 text-primary",
+                    !isActive && !isPast && !isCompleted && "bg-muted text-muted-foreground"
                   )}>
-                    <Icon className="h-4 w-4" />
+                    <div className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold",
+                      isActive && "bg-primary-foreground text-primary",
+                      (isPast || isCompleted) && "bg-primary text-primary-foreground",
+                      !isActive && !isPast && !isCompleted && "bg-muted-foreground/30 text-muted-foreground"
+                    )}>
+                      {(isPast || isCompleted) ? <Check className="h-3 w-3" /> : step.number}
+                    </div>
                     <span className="hidden md:inline text-sm font-medium">{step.label}</span>
                   </div>
                   {index < steps.length - 1 && (
                     <div className={cn(
-                      "w-8 h-0.5 mx-2",
-                      isPast ? "bg-primary" : "bg-border"
+                      "w-4 sm:w-8 md:w-12 h-0.5 mx-1",
+                      (isPast || isCompleted) ? "bg-primary" : "bg-border"
                     )} />
                   )}
                 </div>
@@ -377,53 +532,74 @@ export default function BookCatering() {
           </div>
         </div>
 
-        {/* Step 1: Date Selection */}
+        {/* Step 1: Date & Time Selection */}
         {currentStep === "date" && (
           <div className="max-w-2xl mx-auto">
             <Card className="border-border/50">
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl">When do you need catering?</CardTitle>
-                <CardDescription>Select the date for your event</CardDescription>
+                <CardTitle className="text-2xl">Select Date & Time</CardTitle>
+                <CardDescription>When do you need catering?</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col items-center gap-6">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full max-w-sm justify-start text-left font-normal h-14 text-lg",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-3 h-5 w-5" />
-                      {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="center">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+              <CardContent className="space-y-6">
+                {/* Date Picker */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Event Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal h-14 text-lg",
+                          !selectedDate && "text-muted-foreground",
+                          errors.date && "border-destructive"
+                        )}
+                      >
+                        <CalendarIcon className="mr-3 h-5 w-5" />
+                        {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="center">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <ErrorText message={errors.date} />
+                </div>
 
-                {selectedDate && (
-                  <div className="text-center p-4 bg-primary/10 rounded-lg w-full max-w-sm">
-                    <p className="text-sm text-muted-foreground">Selected Date</p>
-                    <p className="text-xl font-semibold text-foreground">{format(selectedDate, "EEEE, MMMM d, yyyy")}</p>
+                {/* Time Picker */}
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Event Time *</Label>
+                  <Select value={selectedTime} onValueChange={setSelectedTime}>
+                    <SelectTrigger className={cn("h-14 text-lg", errors.time && "border-destructive")}>
+                      <Clock className="mr-3 h-5 w-5 text-muted-foreground" />
+                      <SelectValue placeholder="Select time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_SLOTS.map(time => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <ErrorText message={errors.time} />
+                </div>
+
+                {/* Selected Summary */}
+                {selectedDate && selectedTime && (
+                  <div className="p-4 bg-primary/10 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Selected Date & Time</p>
+                    <p className="text-xl font-semibold text-foreground">
+                      {format(selectedDate, "EEEE, MMMM d, yyyy")} at {selectedTime}
+                    </p>
                   </div>
                 )}
 
-                <Button
-                  size="lg"
-                  className="w-full max-w-sm gap-2"
-                  disabled={!selectedDate}
-                  onClick={() => setCurrentStep("menu")}
-                >
+                <Button size="lg" className="w-full gap-2" onClick={goToNextStep}>
                   Continue to Menu
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -434,260 +610,323 @@ export default function BookCatering() {
 
         {/* Step 2: Menu Selection */}
         {currentStep === "menu" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Choose Your Menu</h1>
-                <p className="text-muted-foreground">
-                  Event Date: <span className="font-medium text-foreground">{selectedDate && format(selectedDate, "PPP")}</span>
-                </p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Menu Section */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Choose Your Menu</h1>
+                  <p className="text-muted-foreground">
+                    {format(selectedDate!, "PPP")} at {selectedTime}
+                  </p>
+                </div>
+                <Button variant="ghost" onClick={goToPrevStep} className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Change Date
+                </Button>
               </div>
-              <Button variant="ghost" onClick={() => setCurrentStep("date")} className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Change Date
-              </Button>
-            </div>
 
-            <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardContent className="p-6">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as FoodType)} className="w-full">
-                  <TabsList className="grid w-full max-w-md grid-cols-3 mb-6 bg-muted/50">
-                    <TabsTrigger 
-                      value="veg" 
-                      className="gap-2 data-[state=active]:bg-[hsl(var(--veg))] data-[state=active]:text-[hsl(var(--veg-foreground))]"
-                    >
-                      <Leaf className="h-4 w-4" />
-                      <span className="hidden sm:inline">Veg</span>
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="non_veg"
-                      className="gap-2 data-[state=active]:bg-[hsl(var(--non-veg))] data-[state=active]:text-[hsl(var(--non-veg-foreground))]"
-                    >
-                      <Drumstick className="h-4 w-4" />
-                      <span className="hidden sm:inline">Non-Veg</span>
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="platter"
-                      className="gap-2 data-[state=active]:bg-[hsl(var(--platter))] data-[state=active]:text-[hsl(var(--platter-foreground))]"
-                    >
-                      <UtensilsCrossed className="h-4 w-4" />
-                      <span className="hidden sm:inline">Platters</span>
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="veg" className="mt-0">
-                    <CategorySection type="veg" />
-                  </TabsContent>
-                  <TabsContent value="non_veg" className="mt-0">
-                    <CategorySection type="non_veg" />
-                  </TabsContent>
-                  <TabsContent value="platter" className="mt-0">
-                    <CategorySection type="platter" />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-
-            {/* Cart Summary */}
-            {cart.length > 0 && (
-              <Card className="sticky bottom-4 bg-card border-primary/20 shadow-lg">
+              {/* Guest Count */}
+              <Card className="border-primary/20 bg-primary/5">
                 <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <ShoppingCart className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">{getTotalItems()} items selected</p>
-                        <p className="text-2xl font-bold text-primary">{formatCurrency(getTotalAmount())}</p>
-                      </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      <Label className="text-base font-medium">Number of Guests *</Label>
                     </div>
-                    <Button size="lg" onClick={() => setCurrentStep("details")} className="w-full sm:w-auto gap-2">
-                      Continue
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
+                    <div className="flex-1 max-w-xs">
+                      <Input
+                        type="number"
+                        min={MIN_GUEST_COUNT}
+                        value={guestCount}
+                        onChange={(e) => setGuestCount(e.target.value)}
+                        placeholder={`Minimum ${MIN_GUEST_COUNT} guests`}
+                        className={cn("h-12 text-lg", errors.guestCount && "border-destructive")}
+                      />
+                      <ErrorText message={errors.guestCount} />
+                    </div>
+                    {parseInt(guestCount) >= MIN_GUEST_COUNT && (
+                      <p className="text-sm text-primary font-medium">
+                        Staff required: {getStaffCount()} persons
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            )}
+
+              {errors.cart && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.cart}
+                  </p>
+                </div>
+              )}
+
+              {/* Menu Tabs */}
+              <Card className="bg-card/50 backdrop-blur border-border/50">
+                <CardContent className="p-6">
+                  <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as FoodType)} className="w-full">
+                    <TabsList className="grid w-full max-w-md grid-cols-3 mb-6 bg-muted/50">
+                      <TabsTrigger 
+                        value="veg" 
+                        className="gap-2 data-[state=active]:bg-[hsl(var(--veg))] data-[state=active]:text-[hsl(var(--veg-foreground))]"
+                      >
+                        <Leaf className="h-4 w-4" />
+                        <span className="hidden sm:inline">Veg</span>
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="non_veg"
+                        className="gap-2 data-[state=active]:bg-[hsl(var(--non-veg))] data-[state=active]:text-[hsl(var(--non-veg-foreground))]"
+                      >
+                        <Drumstick className="h-4 w-4" />
+                        <span className="hidden sm:inline">Non-Veg</span>
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="platter"
+                        className="gap-2 data-[state=active]:bg-[hsl(var(--platter))] data-[state=active]:text-[hsl(var(--platter-foreground))]"
+                      >
+                        <UtensilsCrossed className="h-4 w-4" />
+                        <span className="hidden sm:inline">Platters</span>
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="veg" className="mt-0"><CategorySection type="veg" /></TabsContent>
+                    <TabsContent value="non_veg" className="mt-0"><CategorySection type="non_veg" /></TabsContent>
+                    <TabsContent value="platter" className="mt-0"><CategorySection type="platter" /></TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Cost Summary Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-24 space-y-4">
+                <CostBreakdown />
+                
+                {cart.length > 0 && parseInt(guestCount) >= MIN_GUEST_COUNT && (
+                  <Button size="lg" className="w-full gap-2" onClick={goToNextStep}>
+                    Continue
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
         {/* Step 3: Customer Details */}
         {currentStep === "details" && (
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Your Details</h1>
-                <p className="text-muted-foreground">Tell us about your event</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">Your Details</h1>
+                  <p className="text-muted-foreground">Tell us how to contact you</p>
+                </div>
+                <Button variant="ghost" onClick={goToPrevStep} className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Menu
+                </Button>
               </div>
-              <Button variant="ghost" onClick={() => setCurrentStep("menu")} className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Menu
-              </Button>
+
+              <Card className="border-border/50">
+                <CardContent className="p-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name *</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="name"
+                        value={customerDetails.name}
+                        onChange={(e) => setCustomerDetails(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="John Doe"
+                        className={cn("pl-10 h-12", errors.name && "border-destructive")}
+                      />
+                    </div>
+                    <ErrorText message={errors.name} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        value={customerDetails.phone}
+                        onChange={(e) => setCustomerDetails(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                        placeholder="9876543210"
+                        className={cn("pl-10 h-12", errors.phone && "border-destructive")}
+                      />
+                    </div>
+                    <ErrorText message={errors.phone} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address *</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={customerDetails.email}
+                        onChange={(e) => setCustomerDetails(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="john@example.com"
+                        className={cn("pl-10 h-12", errors.email && "border-destructive")}
+                      />
+                    </div>
+                    <ErrorText message={errors.email} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Event Address *</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Textarea
+                        id="address"
+                        value={customerDetails.address}
+                        onChange={(e) => setCustomerDetails(prev => ({ ...prev, address: e.target.value }))}
+                        placeholder="Full venue address with landmarks"
+                        className={cn("pl-10 min-h-[80px]", errors.address && "border-destructive")}
+                      />
+                    </div>
+                    <ErrorText message={errors.address} />
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full gap-2"
+                    onClick={handleSubmitOrder}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Placing Order...
+                      </>
+                    ) : (
+                      <>
+                        Place Order
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Order Summary */}
-            <Card className="bg-muted/30 border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Event Date</span>
-                  <span className="font-medium">{selectedDate && format(selectedDate, "PPP")}</span>
-                </div>
-                {cart.map(item => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{item.name} × {item.quantity}</span>
-                    <span className="font-medium">{formatCurrency(item.price * item.quantity)}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between pt-2 border-t border-border">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-bold text-primary">{formatCurrency(getTotalAmount())}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Customer Form */}
-            <Card className="border-border/50">
-              <CardContent className="p-6 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name *</Label>
-                    <Input
-                      id="name"
-                      value={customerDetails.name}
-                      onChange={(e) => setCustomerDetails(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="John Doe"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      value={customerDetails.phone}
-                      onChange={(e) => setCustomerDetails(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="+91 98765 43210"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={customerDetails.email}
-                    onChange={(e) => setCustomerDetails(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="john@example.com"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="eventName">Event Name *</Label>
-                    <Input
-                      id="eventName"
-                      value={customerDetails.eventName}
-                      onChange={(e) => setCustomerDetails(prev => ({ ...prev, eventName: e.target.value }))}
-                      placeholder="Birthday Party, Wedding, etc."
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="guestCount">Number of Guests *</Label>
-                    <Input
-                      id="guestCount"
-                      type="number"
-                      min="1"
-                      value={customerDetails.guestCount}
-                      onChange={(e) => setCustomerDetails(prev => ({ ...prev, guestCount: e.target.value }))}
-                      placeholder="50"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="eventLocation">Event Location</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="eventLocation"
-                      className="pl-10"
-                      value={customerDetails.eventLocation}
-                      onChange={(e) => setCustomerDetails(prev => ({ ...prev, eventLocation: e.target.value }))}
-                      placeholder="Venue address"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Special Instructions</Label>
-                  <Textarea
-                    id="notes"
-                    value={customerDetails.notes}
-                    onChange={(e) => setCustomerDetails(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Any dietary requirements, allergies, or special requests..."
-                    rows={3}
-                  />
-                </div>
-
-                <Button
-                  size="lg"
-                  className="w-full gap-2"
-                  onClick={handleSubmitOrder}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Placing Order..." : "Place Order"}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="lg:col-span-1">
+              <div className="sticky top-24">
+                <CostBreakdown showFull />
+              </div>
+            </div>
           </div>
         )}
 
         {/* Step 4: Confirmation */}
         {currentStep === "confirm" && (
-          <div className="max-w-lg mx-auto text-center">
+          <div className="max-w-2xl mx-auto">
             <Card className="border-border/50">
               <CardContent className="p-8">
-                <div className="h-20 w-20 rounded-full bg-[hsl(var(--veg)/0.15)] flex items-center justify-center mx-auto mb-6">
-                  <svg className="h-10 w-10 text-[hsl(var(--veg))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                <div className="text-center mb-8">
+                  <div className="h-20 w-20 rounded-full bg-[hsl(var(--success)/0.15)] flex items-center justify-center mx-auto mb-4">
+                    <Check className="h-10 w-10 text-[hsl(var(--success))]" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-foreground mb-2">Order Placed Successfully!</h1>
+                  <p className="text-muted-foreground">
+                    Thank you for your order. We'll contact you soon to confirm the details.
+                  </p>
                 </div>
-                <h1 className="text-2xl font-bold text-foreground mb-2">Order Placed Successfully!</h1>
-                <p className="text-muted-foreground mb-6">
-                  Thank you for your order. We'll contact you soon to confirm the details.
-                </p>
-                <div className="bg-muted/30 rounded-lg p-4 mb-6 text-left space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Event Date</span>
-                    <span className="font-medium">{selectedDate && format(selectedDate, "PPP")}</span>
+
+                <div className="space-y-4">
+                  {/* Event Details */}
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-2">
+                    <h3 className="font-semibold text-foreground">Event Details</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-muted-foreground">Date & Time</span>
+                      <span className="font-medium">{format(selectedDate!, "PPP")} at {selectedTime}</span>
+                      <span className="text-muted-foreground">Guest Count</span>
+                      <span className="font-medium">{guestCount} guests</span>
+                      <span className="text-muted-foreground">Location</span>
+                      <span className="font-medium">{customerDetails.address}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Items</span>
-                    <span className="font-medium">{getTotalItems()}</span>
+
+                  {/* Selected Items */}
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-2">
+                    <h3 className="font-semibold text-foreground">Selected Items</h3>
+                    {cart.map(item => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {item.name} ({item.quantity} × {guestCount} guests)
+                        </span>
+                        <span className="font-medium">{formatCurrency(item.price * item.quantity * parseInt(guestCount))}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Amount</span>
-                    <span className="font-bold text-primary">{formatCurrency(getTotalAmount())}</span>
+
+                  {/* Charges */}
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-2">
+                    <h3 className="font-semibold text-foreground">Charges Breakdown</h3>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Food Cost</span>
+                        <span>{formatCurrency(getFoodCost())}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Vessel Charges</span>
+                        <span>{formatCurrency(VESSEL_CHARGES)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Delivery Charges</span>
+                        <span>{formatCurrency(DELIVERY_CHARGES)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Staff Charges ({getStaffCount()} staff)</span>
+                        <span>{formatCurrency(getStaffCharges())}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Service Charges (5%)</span>
+                        <span>{formatCurrency(getServiceCharges())}</span>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Total */}
+                  <div className="p-4 bg-primary/10 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-lg">Total Amount</span>
+                      <span className="font-bold text-2xl text-primary">{formatCurrency(getTotalAmount())}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Order Status: Pending Confirmation</p>
+                  </div>
+
+                  <Button onClick={resetOrder} className="w-full" size="lg">
+                    Book Another Event
+                  </Button>
                 </div>
-                <Button onClick={resetOrder} className="w-full">
-                  Book Another Event
-                </Button>
               </CardContent>
             </Card>
           </div>
         )}
       </main>
+
+      {/* Sticky Bottom Bar for Mobile - Menu Step */}
+      {currentStep === "menu" && cart.length > 0 && parseInt(guestCount) >= MIN_GUEST_COUNT && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">{getTotalItems()} items selected</p>
+              <p className="text-xl font-bold text-primary">{formatCurrency(getTotalAmount())}</p>
+            </div>
+            <Button size="lg" onClick={goToNextStep} className="gap-2">
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border mt-16 py-6">
