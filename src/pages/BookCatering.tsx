@@ -380,9 +380,33 @@ export default function BookCatering() {
   const MenuItemCard = ({ item }: { item: MenuItem }) => {
     const quantity = getCartItemQuantity(item.id);
     const guests = parseInt(guestCount) || 0;
+    const isSelected = quantity > 0;
+    
+    const handleCardClick = () => {
+      if (!isSelected) {
+        addToCart(item);
+      }
+    };
+
+    const handleQuantityChange = (e: React.MouseEvent, action: 'increase' | 'decrease') => {
+      e.stopPropagation();
+      if (action === 'increase') {
+        addToCart(item);
+      } else {
+        removeFromCart(item.id);
+      }
+    };
     
     return (
-      <Card className="bg-card hover:shadow-md transition-all duration-300 border border-border/50">
+      <Card 
+        className={cn(
+          "bg-card transition-all duration-300 border-2 cursor-pointer",
+          isSelected 
+            ? "border-primary shadow-lg ring-2 ring-primary/20" 
+            : "border-border/50 hover:border-primary/50 hover:shadow-md"
+        )}
+        onClick={handleCardClick}
+      >
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-3">
             <div className="flex-1">
@@ -396,6 +420,11 @@ export default function BookCatering() {
                 <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
               )}
             </div>
+            {isSelected && (
+              <div className="ml-2">
+                <Check className="h-5 w-5 text-primary" />
+              </div>
+            )}
           </div>
           
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
@@ -404,28 +433,36 @@ export default function BookCatering() {
               <p className="text-xs text-muted-foreground">per plate</p>
             </div>
             
-            {quantity > 0 ? (
+            {isSelected && (
               <div className="flex items-center gap-3">
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.id)}>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={(e) => handleQuantityChange(e, 'decrease')}
+                >
                   <Minus className="h-4 w-4" />
                 </Button>
                 <span className="font-semibold text-foreground w-6 text-center">{quantity}</span>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => addToCart(item)}>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={(e) => handleQuantityChange(e, 'increase')}
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
-            ) : (
-              <Button variant="outline" size="sm" onClick={() => addToCart(item)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add
-              </Button>
             )}
           </div>
           
-          {quantity > 0 && guests > 0 && (
+          {isSelected && guests > 0 && (
             <div className="mt-3 p-2 bg-primary/5 rounded-md">
               <p className="text-sm text-primary font-medium">
-                {quantity} × {guests} guests = {formatCurrency(item.price * quantity * guests)}
+                Item Total: {formatCurrency(item.price * quantity * guests)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {quantity} × {guests} guests × {formatCurrency(item.price)}
               </p>
             </div>
           )}
