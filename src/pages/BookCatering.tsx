@@ -43,12 +43,23 @@ interface ValidationErrors {
   [key: string]: string;
 }
 
-// Constants for charges
-const VESSEL_CHARGES = 5000;
-const DELIVERY_CHARGES = 3000;
-const STAFF_RATE = 800;
-const SERVICE_CHARGE_PERCENT = 5;
-const GUESTS_PER_STAFF = 50;
+interface AdminCharges {
+  delivery_charge: number;
+  vessel_charge: number;
+  staff_charge_per_person: number;
+  guests_per_staff: number;
+  service_charge_percent: number;
+}
+
+// Default charges (used as fallback)
+const DEFAULT_CHARGES: AdminCharges = {
+  delivery_charge: 3000,
+  vessel_charge: 5000,
+  staff_charge_per_person: 800,
+  guests_per_staff: 50,
+  service_charge_percent: 5,
+};
+
 const MIN_GUEST_COUNT = 50;
 
 // Time slots
@@ -83,6 +94,10 @@ export default function BookCatering() {
     address: "",
   });
   
+  // Admin charges (fetched from database)
+  const [adminCharges, setAdminCharges] = useState<AdminCharges>(DEFAULT_CHARGES);
+  const [chargesLoading, setChargesLoading] = useState(true);
+  
   // State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -97,8 +112,32 @@ export default function BookCatering() {
   useEffect(() => {
     if (user) {
       fetchMenuItems();
+      fetchAdminCharges();
     }
   }, [user]);
+
+  const fetchAdminCharges = async () => {
+    setChargesLoading(true);
+    const { data, error } = await supabase
+      .from("admin_charges")
+      .select("*")
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching charges:", error);
+      // Use default charges on error
+    } else if (data) {
+      setAdminCharges({
+        delivery_charge: Number(data.delivery_charge),
+        vessel_charge: Number(data.vessel_charge),
+        staff_charge_per_person: Number(data.staff_charge_per_person),
+        guests_per_staff: Number(data.guests_per_staff),
+        service_charge_percent: Number(data.service_charge_percent),
+      });
+    }
+    setChargesLoading(false);
+  };
 
   const fetchMenuItems = async () => {
     const { data, error } = await supabase
@@ -125,16 +164,16 @@ export default function BookCatering() {
 
   const getStaffCount = () => {
     const guests = parseInt(guestCount) || 0;
-    return Math.ceil(guests / GUESTS_PER_STAFF);
+    return Math.ceil(guests / adminCharges.guests_per_staff);
   };
 
-  const getStaffCharges = () => getStaffCount() * STAFF_RATE;
-  const getServiceCharges = () => Math.round(getFoodCost() * SERVICE_CHARGE_PERCENT / 100);
+  const getStaffCharges = () => getStaffCount() * adminCharges.staff_charge_per_person;
+  const getServiceCharges = () => Math.round(getFoodCost() * adminCharges.service_charge_percent / 100);
   
   const getTotalAmount = () => {
     const foodCost = getFoodCost();
     if (foodCost === 0) return 0;
-    return foodCost + VESSEL_CHARGES + DELIVERY_CHARGES + getStaffCharges() + getServiceCharges();
+    return foodCost + adminCharges.vessel_charge + adminCharges.delivery_charge + getStaffCharges() + getServiceCharges();
   };
 
   const getTotalItems = () => cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -444,27 +483,28 @@ export default function BookCatering() {
           </div>
           
           <div className="border-t border-border pt-3 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Admin Charges (Read Only)</p>
             <div className="flex justify-between text-sm">
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Package className="h-4 w-4" /> Vessel Charges
               </span>
-              <span>{formatCurrency(VESSEL_CHARGES)}</span>
+              <span>{formatCurrency(adminCharges.vessel_charge)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Truck className="h-4 w-4" /> Delivery Charges
               </span>
-              <span>{formatCurrency(DELIVERY_CHARGES)}</span>
+              <span>{formatCurrency(adminCharges.delivery_charge)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="flex items-center gap-2 text-muted-foreground">
-                <ChefHat className="h-4 w-4" /> Staff Charges ({getStaffCount()} staff × ₹{STAFF_RATE})
+                <ChefHat className="h-4 w-4" /> Staff Charges ({getStaffCount()} staff × ₹{adminCharges.staff_charge_per_person})
               </span>
               <span>{formatCurrency(getStaffCharges())}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="flex items-center gap-2 text-muted-foreground">
-                <Percent className="h-4 w-4" /> Service Charges ({SERVICE_CHARGE_PERCENT}%)
+                <Percent className="h-4 w-4" /> Service Charges ({adminCharges.service_charge_percent}%)
               </span>
               <span>{formatCurrency(getServiceCharges())}</span>
             </div>
@@ -876,18 +916,18 @@ export default function BookCatering() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Vessel Charges</span>
-                        <span>{formatCurrency(VESSEL_CHARGES)}</span>
+                        <span>{formatCurrency(adminCharges.vessel_charge)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Delivery Charges</span>
-                        <span>{formatCurrency(DELIVERY_CHARGES)}</span>
+                        <span>{formatCurrency(adminCharges.delivery_charge)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Staff Charges ({getStaffCount()} staff)</span>
                         <span>{formatCurrency(getStaffCharges())}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Service Charges (5%)</span>
+                        <span className="text-muted-foreground">Service Charges ({adminCharges.service_charge_percent}%)</span>
                         <span>{formatCurrency(getServiceCharges())}</span>
                       </div>
                     </div>
