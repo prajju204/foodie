@@ -10,6 +10,7 @@ import {
   FileText,
   LogOut,
   ChefHat,
+  Settings,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +35,7 @@ const menuItems = [
   { title: "Staff", url: "/staff", icon: Users },
   { title: "Customers", url: "/customers", icon: UserCircle },
   { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
