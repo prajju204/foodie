@@ -29,11 +29,11 @@ import { useAuth } from "@/components/auth/AuthProvider";
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Orders", url: "/orders", icon: ShoppingCart },
-  { title: "Menu", url: "/menu", icon: UtensilsCrossed },
-  { title: "Inventory", url: "/inventory", icon: Package },
+ { title: "Menu", url: "/menu", icon: UtensilsCrossed },
+ //{ title: "Inventory", url: "/inventory", icon: Package },
   { title: "Staff", url: "/staff", icon: Users },
-  { title: "Customers", url: "/customers", icon: UserCircle },
-  { title: "Reports", url: "/reports", icon: FileText },
+ // { title: "Customers", url: "/customers", icon: UserCircle },
+ // { title: "Reports", url: "/reports", icon: FileText },
 ];
 
 export function AppSidebar() {

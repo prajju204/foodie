@@ -17,8 +17,8 @@ import {
   Building2,
   Heart
 } from "lucide-react";
-import foodieLogo from "@/assets/foodie-logo.png";
-import heroCatering from "@/assets/hero-catering.jpg";
+import foodieLogo from "@/assets/foodie-logo.png"
+import heroCatering from "@/assets/blue-plate-catering-home-page.jpg.webp";
 
 const Homepage = () => {
   const { user } = useAuth();
