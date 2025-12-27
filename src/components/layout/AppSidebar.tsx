@@ -10,6 +10,7 @@ import {
   FileText,
   LogOut,
   ChefHat,
+  Settings,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,8 +33,14 @@ const menuItems = [
  { title: "Menu", url: "/menu", icon: UtensilsCrossed },
  //{ title: "Inventory", url: "/inventory", icon: Package },
   { title: "Staff", url: "/staff", icon: Users },
+<<<<<<< HEAD
  // { title: "Customers", url: "/customers", icon: UserCircle },
  // { title: "Reports", url: "/reports", icon: FileText },
+=======
+  { title: "Customers", url: "/customers", icon: UserCircle },
+  { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Settings", url: "/settings", icon: Settings },
+>>>>>>> 16f246658be415bb32cacd81fe24110a770a3aa9
 ];
 
 export function AppSidebar() {

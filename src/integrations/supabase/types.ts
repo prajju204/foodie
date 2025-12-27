@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_charges: {
+        Row: {
+          delivery_charge: number
+          guests_per_staff: number
+          id: string
+          service_charge_percent: number
+          staff_charge_per_person: number
+          updated_at: string | null
+          updated_by: string | null
+          vessel_charge: number
+        }
+        Insert: {
+          delivery_charge?: number
+          guests_per_staff?: number
+          id?: string
+          service_charge_percent?: number
+          staff_charge_per_person?: number
+          updated_at?: string | null
+          updated_by?: string | null
+          vessel_charge?: number
+        }
+        Update: {
+          delivery_charge?: number
+          guests_per_staff?: number
+          id?: string
+          service_charge_percent?: number
+          staff_charge_per_person?: number
+          updated_at?: string | null
+          updated_by?: string | null
+          vessel_charge?: number
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null

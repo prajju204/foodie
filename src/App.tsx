@@ -14,6 +14,7 @@ import Inventory from "./pages/Inventory";
 import Staff from "./pages/Staff";
 import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import BookCatering from "./pages/BookCatering";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/staff" element={<Staff />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
