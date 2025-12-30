@@ -30,17 +30,11 @@ import { useAuth } from "@/components/auth/AuthProvider";
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Orders", url: "/orders", icon: ShoppingCart },
- { title: "Menu", url: "/menu", icon: UtensilsCrossed },
- //{ title: "Inventory", url: "/inventory", icon: Package },
+  { title: "Menu", url: "/menu", icon: UtensilsCrossed },
   { title: "Staff", url: "/staff", icon: Users },
-<<<<<<< HEAD
- // { title: "Customers", url: "/customers", icon: UserCircle },
- // { title: "Reports", url: "/reports", icon: FileText },
-=======
   { title: "Customers", url: "/customers", icon: UserCircle },
   { title: "Reports", url: "/reports", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
->>>>>>> 16f246658be415bb32cacd81fe24110a770a3aa9
 ];
 
 export function AppSidebar() {
