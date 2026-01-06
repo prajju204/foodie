@@ -503,36 +503,47 @@ export default function BookCatering() {
           {paginatedItems.map(item => <MenuItemCard key={item.id} item={item} />)}
         </div>
         
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 border-t">
-            <p className="text-sm text-muted-foreground">
-              Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} items
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Previous
+        <div className="flex items-center justify-between pt-4 border-t">
+          <p className="text-sm text-muted-foreground">
+            {totalPages > 1 
+              ? `Showing ${startIndex + 1}-${Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of ${items.length} items`
+              : `${items.length} items`
+            }
+          </p>
+          <div className="flex items-center gap-2">
+            {totalPages > 1 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <span className="text-sm font-medium px-3">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </>
+            )}
+            {cart.length > 0 && parseInt(guestCount) >= MIN_GUEST_COUNT && (
+              <Button size="sm" onClick={goToNextStep} className="gap-1 ml-2">
+                Continue
+                <ArrowRight className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-medium px-3">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Next
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   };
