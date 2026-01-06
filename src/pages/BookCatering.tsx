@@ -471,8 +471,23 @@ export default function BookCatering() {
     );
   };
 
+  const ITEMS_PER_PAGE = 12;
+  const [categoryPages, setCategoryPages] = useState<Record<FoodType, number>>({
+    veg: 1,
+    non_veg: 1,
+    platter: 1,
+  });
+
   const CategorySection = ({ type }: { type: FoodType }) => {
     const items = filterItemsByType(type);
+    const currentPage = categoryPages[type];
+    const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedItems = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    
+    const goToPage = (page: number) => {
+      setCategoryPages(prev => ({ ...prev, [type]: page }));
+    };
     
     if (items.length === 0) {
       return (
@@ -483,8 +498,41 @@ export default function BookCatering() {
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map(item => <MenuItemCard key={item.id} item={item} />)}
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {paginatedItems.map(item => <MenuItemCard key={item.id} item={item} />)}
+        </div>
+        
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} items
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <span className="text-sm font-medium px-3">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
