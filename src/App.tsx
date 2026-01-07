@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { AdminRoute } from "@/components/auth/AdminRoute";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -28,18 +30,64 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/book" element={<BookCatering />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/orders/:id" element={<OrderDetail />} />
-            <Route path="/menu" element={<Menu />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/staff" element={<Staff />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
+            
+            {/* Protected route for customers */}
+            <Route path="/book" element={
+              <ProtectedRoute>
+                <BookCatering />
+              </ProtectedRoute>
+            } />
+            
+            {/* Admin-only routes */}
+            <Route path="/dashboard" element={
+              <AdminRoute>
+                <Dashboard />
+              </AdminRoute>
+            } />
+            <Route path="/orders" element={
+              <AdminRoute>
+                <Orders />
+              </AdminRoute>
+            } />
+            <Route path="/orders/:id" element={
+              <AdminRoute>
+                <OrderDetail />
+              </AdminRoute>
+            } />
+            <Route path="/menu" element={
+              <AdminRoute>
+                <Menu />
+              </AdminRoute>
+            } />
+            <Route path="/inventory" element={
+              <AdminRoute>
+                <Inventory />
+              </AdminRoute>
+            } />
+            <Route path="/staff" element={
+              <AdminRoute>
+                <Staff />
+              </AdminRoute>
+            } />
+            <Route path="/customers" element={
+              <AdminRoute>
+                <Customers />
+              </AdminRoute>
+            } />
+            <Route path="/reports" element={
+              <AdminRoute>
+                <Reports />
+              </AdminRoute>
+            } />
+            <Route path="/settings" element={
+              <AdminRoute>
+                <Settings />
+              </AdminRoute>
+            } />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
