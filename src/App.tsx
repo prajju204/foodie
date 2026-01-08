@@ -18,6 +18,7 @@ import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import BookCatering from "./pages/BookCatering";
+import ManageUsers from "./pages/ManageUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -85,6 +86,11 @@ const App = () => (
             <Route path="/settings" element={
               <AdminRoute>
                 <Settings />
+              </AdminRoute>
+            } />
+            <Route path="/manage-users" element={
+              <AdminRoute>
+                <ManageUsers />
               </AdminRoute>
             } />
             

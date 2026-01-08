@@ -11,6 +11,8 @@ import {
   LogOut,
   ChefHat,
   Settings,
+  UserCog,
+  Home,
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,12 +30,13 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Orders", url: "/orders", icon: ShoppingCart },
   { title: "Menu", url: "/menu", icon: UtensilsCrossed },
   { title: "Staff", url: "/staff", icon: Users },
   { title: "Customers", url: "/customers", icon: UserCircle },
   { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Manage Users", url: "/manage-users", icon: UserCog },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -82,7 +85,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
+      <SidebarFooter className="border-t border-sidebar-border p-4 space-y-2">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2"
+          onClick={() => window.location.href = "/"}
+        >
+          <Home className="h-4 w-4" />
+          Back to Home
+        </Button>
         <Button
           variant="outline"
           className="w-full justify-start gap-2"
